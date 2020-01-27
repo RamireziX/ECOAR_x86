@@ -6,6 +6,13 @@
 #include <memory.h>
 #include <math.h>
 
+
+#define PRINT(x) printf("%s = %d\n", #x, x);
+
+
+
+
+
 typedef struct
 {
 	int width, height;
@@ -267,13 +274,26 @@ Point* FindPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt)
 
 Point* findPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt);
 
+//int findPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt);
+
 
 int main(int argc, char* argv[])
 {
 	imgInfo* pInfo;
-	int pattern[] = { 0x40, 0x3d, 0x3d, 0x3d, 0x41, 0x7d, 0x7d, 0x43 }; 
+	int pattern1[] = { 0x40, 0x3d, 0x3d, 0x3d, 0x41, 0x7d, 0x7d, 0x43 }; 
+	int pattern2[] = { 0x3f, 0x42, 0x42, 0x42, 0x3e, 0x02, 0x02, 0x3c };
+	int pattern3[] = { 0x03, 0x1B, 0x1B, 0x1B, 0x1B, 0x00 };
+	
+	
+
 					// { 0x3f, 0x42, 0x42, 0x42, 0x3e, 0x02, 0x02, 0x3c }; inverted color version
 					// it is small g!
+	
+	
+	
+	int *pattern = pattern3;
+	
+	
 	int pCnt, pSize, i, mask;
 	Point *pts;
 
@@ -307,24 +327,15 @@ int main(int argc, char* argv[])
 
 	pts = (Point *) malloc(sizeof(Point)*512);
 
-	pSize = (7 << 16) | 8;
+	pSize = (5 << 16) | 6;
 
-	
-	
-	//FindPattern(pInfo, pSize, pattern, pts, &pCnt); 
-	findPattern(pInfo, pSize, pattern, pts, &pCnt); 
-	
-	printf("hex: %x\n", pCnt);
-	printf("dec: %d\n", pCnt);
-	
-	
-	
-	pCnt = 0;
+
 
 	// because it is hard to count based on coordinates alone 
 	// I invert rectangles found
-
 	
+	findPattern(pInfo, pSize, pattern, pts, &pCnt);
+	//FindPattern(pInfo, pSize, pattern, pts, &pCnt); 
 	printf("Pattern occurences found: %d\n", pCnt);
 	for (i=0; i<pCnt; ++i)
 	{
@@ -332,7 +343,7 @@ int main(int argc, char* argv[])
 		InvRect(pInfo, & pts[i], pSize);
 	}
 
-	saveBMP(pInfo, "result.bmp");
+	saveBMP(pInfo, "result2.bmp");
 
 	FreeScreen(pInfo);
 	free(pts);
