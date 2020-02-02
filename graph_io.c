@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <math.h>
-
+#include <stdint.h>
 
 #define PRINT(x) printf("%s = %d\n", #x, x);
 
@@ -29,23 +29,23 @@ typedef struct
 typedef struct
 {
 	unsigned short bfType; 						//2
-	unsigned long  bfSize; 						// 4
+	uint32_t  bfSize; 						// 8
 	unsigned short bfReserved1; 				//2
 	unsigned short bfReserved2; 				//2
-	unsigned long  bfOffBits; 					//4
-	unsigned long  biSize; 						//4
-	long  biWidth; 
-	long  biHeight; 
-	short biPlanes; 
-	short biBitCount; 
-	unsigned long  biCompression; 
-	unsigned long  biSizeImage; 
-	long biXPelsPerMeter; 
-	long biYPelsPerMeter; 
-	unsigned long  biClrUsed; 
-	unsigned long  biClrImportant;
-	unsigned long  RGBQuad_0;
-	unsigned long  RGBQuad_1;
+	uint32_t  bfOffBits; 					//8
+	uint32_t  biSize; 						//8
+	int32_t biWidth; //8
+	int32_t biHeight; //8
+	short biPlanes; //2
+	short biBitCount; //2
+	uint32_t  biCompression;  //8
+	uint32_t  biSizeImage; //8
+	int32_t biXPelsPerMeter; //8
+	int32_t biYPelsPerMeter; //8
+	uint32_t  biClrUsed;//8 
+	uint32_t  biClrImportant;//8
+	uint32_t  RGBQuad_0;//8
+	uint32_t  RGBQuad_1;//8
 } bmpHdr;
 
 void* freeResources(FILE* pFile, void* pFirst, void* pSnd)
@@ -272,7 +272,7 @@ Point* FindPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt)
 
 /****************************************************************************************/
 
-Point* findPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt);
+//Point* findPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt);
 
 //int findPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt);
 
@@ -299,11 +299,11 @@ int main(int argc, char* argv[])
 
 	if (sizeof(bmpHdr) != 62)
 	{
-		printf("Change compilation options so as bmpHdr struct size is 62 bytes.\n");
+	printf("Change compilation options so as bmpHdr struct size is 62 bytes.\n");
 		return 1;
 	}
 
-	
+	printf("%ld", sizeof(bmpHdr));
 	
 	pInfo = readBMP("src_001.bmp");
 	
@@ -317,8 +317,6 @@ int main(int argc, char* argv[])
 	}
 	
 	
-	printf("%d\n", sizeof(unsigned short));
-	printf("%d\n", sizeof(unsigned char*));
 	
 
 	
@@ -334,8 +332,8 @@ int main(int argc, char* argv[])
 	// because it is hard to count based on coordinates alone 
 	// I invert rectangles found
 	
-	findPattern(pInfo, pSize, pattern, pts, &pCnt);
-	//FindPattern(pInfo, pSize, pattern, pts, &pCnt); 
+	//findPattern(pInfo, pSize, pattern, pts, &pCnt);
+	FindPattern(pInfo, pSize, pattern, pts, &pCnt); 
 	printf("Pattern occurences found: %d\n", pCnt);
 	for (i=0; i<pCnt; ++i)
 	{
