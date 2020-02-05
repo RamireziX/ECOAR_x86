@@ -208,7 +208,7 @@ pionowo_z_wczytywaniem:
 	
 ;eax - do analizy
 
-	and		ax, word [ebp - 62]					;maskowanie danych
+	and		ax, r8w					;maskowanie danych
 	cmp		ax, word[ebp + 2 * edi - 16 - 2]
 	jne		test_niemaskowanie_z_wczytywaniem
 	dec		edi

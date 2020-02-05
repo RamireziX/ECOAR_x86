@@ -274,8 +274,6 @@ Point* FindPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt)
 
 Point* findPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt);
 
-//int findPattern(imgInfo* pImg, int pSize, int* ptrn, Point* pDst, int* fCnt);
-
 
 int main(int argc, char* argv[])
 {
@@ -332,7 +330,7 @@ int main(int argc, char* argv[])
 	// because it is hard to count based on coordinates alone 
 	// I invert rectangles found
 	
-	findPattern(pInfo, pSize, pattern, pts, &pCnt);
+	pts = findPattern(pInfo, pSize, pattern, pts, &pCnt);
 	//FindPattern(pInfo, pSize, pattern, pts, &pCnt); 
 	printf("Pattern occurences found: %d\n", pCnt);
 	for (i=0; i<pCnt; ++i)
