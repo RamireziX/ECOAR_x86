@@ -27,25 +27,18 @@ section .text
 ;[rbp - 30] - analyze_data
 ;[rbp - 32] - analyze_data							[rbp + 2*rcx - 32]
 
-
-
-;r9 - wysokosc wzorca									
-;r10 - szerokosc wzorca											
-;r11 - adres poczatku tablicy punktow
-;r12 - szerokosc obrazka byte					
+;r9 - height of pattern									
+;r10 - width of pattern											
+;r11 - address of table of coordinates
+;r12 - image width in bytes					
 ;r13 - startBMP r13
-;r14  - szerokosc okna analizy r14							zapisane
-;r15 - wysokosc okna analizy r15								zapisane
+;r14  - width of analyse window r14							saved
+;r15 - height of analyse window r15								saved
 
-
-
-;[rbp - 40] - licznik pikseli
-;[rbp - 48]	- adres pocatku tablicy punktow
-
-
+;[rbp - 40] - pixels counter
+;[rbp - 48]	- address of table of coordinates
 
 findPattern:
-
 
 	push	rbp
 	mov		rbp, rsp
@@ -66,19 +59,12 @@ findPattern:
 	mov		r10, rsi
 	and		r10, rax
 	
-;rsi - nipotrzebe juz
 	mov		[rbp - 40], r8
 	mov		[rbp - 48], rcx
 	mov		r11, rcx
 	
-;rcx - wolne
+;rcx - free
 
-
-	
-	;zapamietanie adresu poczatku tablicy punktow na pozniej
-																;
-	
-	
 	xor		r14, r14
 	mov		r14d, dword[rdi]
 	mov		rax, r14 																	
@@ -90,20 +76,17 @@ findPattern:
 	sub		r15, r9
 	inc		r15
 	
-
-	;wyliczenie dlugosci linii w bajtach
+	;calc line in bytes
 	add		rax, 31
 	shr		rax, 5
 	shl		rax, 2
-	mov		r12, rax																	;zapis szerokosci obrazu w bajtach
+	mov		r12, rax																	;save width in bytes
 	
-	mov		r13, [rdi + 8]																;poczatek bitmapy
+	mov		r13, [rdi + 8]																;start of bitmap
 	
-
 	;save patterns
 	mov		rbx, 16
-	sub		rbx, r10							;edx o ile przesunac w lewo aby wzorzec dosunac do lewej strony drugiego bajtu [ 4 | 3 | 2 | 1]
-	
+	sub		rbx, r10							;edx how much to move left to left side of second byte [ 4 | 3 | 2 | 1]
 	
 	mov		rdi, r9							;edi == ry
 	mov		rsi, rdx
@@ -119,45 +102,36 @@ shift_mask:
 	
 	mov		word [rbp + 2 * rdi - 16 - 2], cx
 	
-	add		rsi, 4								;przesuniecie na kolejny wzorzec
+	add		rsi, 4								;move to next pattern
 	dec		rdi
 	jnz		save_patterns_loop
 	
-	
-		
 ;create mask
-	mov		rsi, r10							;licznik = rx
+	mov		rsi, r10							;counter = rx
 	xor		rdi, rdi
 	inc		rdi									;edi = 1
 	shl		rdi, 15
 	
 	xor		r8, r8							;ecx = 0
-
-
+	
 create_mask_loop:
 	or		r8, rdi
 	shr		rdi, 1
 	dec		rsi
 	jnz		create_mask_loop
 	
-	
-;r8 - maska
-
-
-;GLOWNA PETLA
+;r8 - mask
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;MAIN LOOP
 		
 	xor		rdx, rdx
 	
-	
-kolejna_linia:
-	
+next_line:
 	
 	mov		rsi, r13;					;rsi - start BMP
 	xor		rcx, rcx							;ecx - 
-	mov		rdi, r9						;rdi - dekrementowana wysokosc wzorca
-	xor		rbx, rbx						;ebx - licznik pikseli w prawo
+	mov		rdi, r9						;rdi - decremented height of pattern
+	xor		rbx, rbx						;ebx - pixels counter right
 
-	
 store_data:
 	xor		ax, ax							;eax = 0
 	mov		al, byte[rsi + rcx]
@@ -169,149 +143,124 @@ store_data:
 	dec		rdi
 	jnz		store_data
 	
-	;[rbp + 2*ecx - 32 - 2]
-	
-
-
-	;;;xor		edx, edx
-	
-poziomo_z_wczytywaniem:							;#przesuniecie okna porownania w prawo o 1 piksel plus wczytywanie
-	mov		rdi, r9						;rdi - dekrementowana wysokosc wzorca
+horizontally_with_load:							;#move analyse window 1 pixel right and load
+	mov		rdi, r9						;rdi - decremented height of pattern
 	inc		rsi
-	xor		rcx, rcx							;ecx - licznik wierszach
+	xor		rcx, rcx							;ecx - counter lines
 
-pionowo_z_wczytywaniem:
-	;mov		eax, [rbp + 4 * rdi - 64 - 4]
+vertically_with_load:
 	mov		ax, word[rbp + 2 * rdi - 32 - 2]
 	mov		al, byte[rsi + rcx]
-	
 	add		rcx, r12
-	
 	
 	shl		eax, 1
 	mov		word[rbp + 2 * rdi - 32 - 2], ax
 	shr		eax, 1
 	
-;eax - do analizy
+;eax - to analyse
 
-	and		ax, r8w					;maskowanie danych
+	and		ax, r8w					;masking
 	cmp		ax, word[rbp + 2 * rdi - 16 - 2]
-	jne		test_niemaskowanie_z_wczytywaniem
+	jne		test_nomask_with_load
 	dec		rdi
-	jnz		pionowo_z_wczytywaniem
-	
+	jnz		vertically_with_load
 
-;zapisanie x, y znalezionego wzorca
-;edi - adres punktow
+;save coordinates of found pattern
+;edi - address of coordinates
 	mov		dword [r11], ebx
 	mov		dword [r11 + 4], edx
 	add		r11, 8
 	
 	inc		rbx									;x += 1
 	cmp		rbx, r14
-	je		test_koniec
+	je		test_end
 	
-	jmp		poziomo_bez_wczytywania
-
+	jmp		horizontally_no_load
 	
-	
-niemaskowanie_z_wczytywaniem:								
+nomask_with_load:								
 	mov		ax, word[rbp + 2 * rdi - 32 - 2]
 	mov		al, byte[rsi + rcx]
 	
-	
 	add		rcx, r12
-	
 	
 	shl		eax, 1
 	mov		word[rbp + 2 * rdi - 32 - 2], ax
 	shr		eax, 1
 	
-test_niemaskowanie_z_wczytywaniem:
+test_nomask_with_load:
 	dec		rdi
-	jnz		niemaskowanie_z_wczytywaniem
+	jnz		nomask_with_load
 	
 	inc		rbx									;x += 1
 	cmp		rbx, r14
-	je		test_koniec
+	je		test_end
 
+horizontally_no_load:						;when pixel number is not divisible by 8
+	mov		rdi, r9						;rdi - decremented height of pattern
 	
-poziomo_bez_wczytywania:						;gdy numer piksela nie jest wielokrotnoscia 8
-	mov		rdi, r9						;rdi - dekrementowana wysokosc wzorca
-	
-	
-	
-pionowo_bez_wczytywania:
+vertically_no_load:
 	mov		ax, word[rbp + 2 * rdi - 32 - 2]
 	shl		eax, 1
 	mov		word[rbp + 2 * rdi - 32 - 2], ax
 	shr		eax, 1
 	
-	and		ax, r8w					;maskowanie danych
+	and		ax, r8w					;masking
 	cmp		ax, [rbp + 2 * rdi - 16 - 2]
-	jne		test_niemaskowanie_bez_wczytywania
+	jne		test_nomask_without_load
 	dec		rdi
-	jnz		pionowo_bez_wczytywania
+	jnz		vertically_no_load
 	
-		
-
-;zapisanie x, y znalezionego wzorca
-;edi - adres punktow
+;save coordinates of found pattern
+;edi - address of coordinates
 	mov		dword [r11], ebx
 	mov		dword [r11 + 4], edx
 	add		r11, 8
 	
 	inc		rbx									;x += 1
 	cmp		rbx, r14
-	je		test_koniec
+	je		test_end
 	
-	
-	;sprawdzic podzielnosc przez 8
+	;check / 8
 	
 	mov		al, bl
 	shr		al, 3
 	shl		al, 3
 	cmp		al, bl
-	jz		poziomo_z_wczytywaniem
-	jmp		poziomo_bez_wczytywania
+	jz		horizontally_with_load
+	jmp		horizontally_no_load
 	
-	
-niemaskowanie_bez_wczytywania:								
+nomask_no_load:								
 	mov		ax, word [rbp + 2 * rdi - 32 - 2]
 	shl		ax, 1
 	mov		word [rbp + 2 * rdi - 32 - 2], ax
 	
-test_niemaskowanie_bez_wczytywania:
+test_nomask_without_load:
 	dec		rdi
-	jnz		niemaskowanie_bez_wczytywania
+	jnz		nomask_no_load
 	
 	inc		rbx									;x += 1
 	cmp		rbx, r14
-	je		test_koniec
+	je		test_end
 	
-	
-	;sprawdzic podzielnosc przez 8
+	;check / 8
 	
 	mov		al, bl
 	shr		al, 3
 	shl		al, 3
 	cmp		al, bl
-	jz		poziomo_z_wczytywaniem
-	jmp		poziomo_bez_wczytywania
+	jz		horizontally_with_load
+	jmp		horizontally_no_load
 	
-test_koniec:
+test_end:
 	mov		rax, r13
 	add		rax, r12
 	mov		r13, rax
 	
 	inc		rdx
 	cmp		rdx, r15
-	jl		kolejna_linia
+	jl		next_line
 	
-	
-	
-	
-		;funkcja zwraca adres poczatku tablicy punktow
+		;funct returns address of table of coordinates
 	mov		rax, [rbp - 48]
 	sub		r11, rax
 	shr		r11, 3
@@ -319,16 +268,11 @@ test_koniec:
 	mov		rdi, [rbp - 40]
 	mov		dword [rdi], r11d
 	
-
 	pop		rsi
 	pop		rdi
 	pop		rdx
 	pop		rbx
-	
-	
+
 	mov 	rsp, rbp
 	pop 	rbp
 	ret
-	
-	
-	
